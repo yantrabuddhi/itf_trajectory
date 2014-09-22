@@ -13,7 +13,7 @@ class trajectory:
         #rospy.loginfo(rospy.get_caller_id()+"******I heard*******,%s",data.data)
         #self.strin=data.data
         if not self.rcvd:
-            self.rcvTraj=data.data
+            self.rcvTraj=data
             self.rcvd=True
 
     def __init__(self):
@@ -25,15 +25,16 @@ class trajectory:
 
         self.rcvTraj=JointTrajectory()
 
-        self.pub=rospy.Publisher("pololu/command",MotorCommand)
-        rospy.Subscriber("pololu_trajectory", JointTrajectory, self.callback)
+        self.pub=rospy.Publisher("/pololu/command",MotorCommand,queue_size=2)
+        rospy.Subscriber("/pololu_trajectory", JointTrajectory, self.callback)
         #rospy.Subscriber("pololu_trajectory", String, self.callback)
 
     def moveMotor(self,jntName,pos,speed):
         mtr=MotorCommand()
         mtr.joint_name=jntName
         mtr.position=pos
-        mtr.speed=speed/self.MaxSpeed#pololu take 0 to 1.0 as speed, check the correct division
+        mtr.speed=speed#/self.MaxSpeed#pololu take 0 to 1.0 as speed, check the correct division
+        mtr.acceleration=1.0
         self.pub.publish(mtr)
 
     def start(self):
@@ -59,7 +60,7 @@ class trajectory:
                     self.processing=False
                     self.rcvd=False
                 else:
-                    while (rospy.Time.now()-tme>self.jntTraj.points[frameCount].time_from_start) and frameCount<numFrames:
+                    if frameCount<numFrames and (rospy.Time.now()-tme>self.jntTraj.points[frameCount].time_from_start):
                         nn=0
                         for pt in self.jntTraj.points[frameCount].positions:
                             self.moveMotor(self.jntTraj.joint_names[nn],pt,self.jntTraj.points[frameCount].velocities[nn])
