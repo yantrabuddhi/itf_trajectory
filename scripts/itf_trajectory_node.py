@@ -12,20 +12,24 @@ class trajectory:
     def callback(self,data):
         #rospy.loginfo(rospy.get_caller_id()+"******I heard*******,%s",data.data)
         #self.strin=data.data
+        print("callback")
         if not self.rcvd:
             self.rcvTraj=data
             self.rcvd=True
+            print("recvd")
 
     def __init__(self):
 
         rospy.init_node('pololu_trajectory_listener', anonymous=True)
 
         self.MaxSpeed=6.2 #radians/sec
-        self.TimeOut=15.0 #seconds
+        self.TimeOut=120.0 #seconds
 
         self.rcvTraj=JointTrajectory()
+        self.rcvd=False
+        self.processing=False
 
-        self.pub=rospy.Publisher("/pololu/command",MotorCommand,queue_size=2)
+        self.pub=rospy.Publisher("/pololu/command",MotorCommand,queue_size=4)
         rospy.Subscriber("/pololu_trajectory", JointTrajectory, self.callback)
         #rospy.Subscriber("pololu_trajectory", String, self.callback)
 
@@ -54,7 +58,7 @@ class trajectory:
                 frameCount=0
                 numFrames=len(self.jntTraj.points)
 
-            if self.processing:
+            if self.processing:#added self.recvd
                 #process
                 if frameCount>=numFrames or (rospy.Time.now()-tme>rospy.Duration().from_sec(self.TimeOut)):
                     self.processing=False
